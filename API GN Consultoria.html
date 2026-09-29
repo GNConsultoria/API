@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Análise de Perfil do Investidor (Suitability) — GN Consultoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #12343B; --ink-soft: #3C5760; --paper: #FAFAF7; --card: #FFFFFF; --line: #DCE2E0;
+    --brass: #A8844E; --muted: #5A6770; --focus: #2F7A8C;
+    --c1: #4F8A74; --c2: #3E6E9E; --c3: #C0862A; --c4: #9B3B3B; --error: #B23A3A;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #DCEAE8; --ink-soft: #AFC3C2; --paper: #0F1E22; --card: #16292E; --line: #2A4046;
+      --brass: #C9A56E; --muted: #93A5A8; --focus: #6FC0D1;
+      --c1: #6DB095; --c2: #6C9BCB; --c3: #DDA24A; --c4: #CF6A6A; --error: #E07A7A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #DCEAE8; --ink-soft: #AFC3C2; --paper: #0F1E22; --card: #16292E; --line: #2A4046;
+    --brass: #C9A56E; --muted: #93A5A8; --focus: #6FC0D1;
+    --c1: #6DB095; --c2: #6C9BCB; --c3: #DDA24A; --c4: #CF6A6A; --error: #E07A7A;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 1rem; line-height: 1.55; }
+  h1, h2, h3 { font-family: "Spectral", Georgia, "Times New Roman", serif; font-weight: 600; line-height: 1.2; margin: 0; }
+  a { color: var(--focus); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .brand { border-bottom: 1px solid var(--line); padding: 1.1rem clamp(1rem, 4vw, 3rem); display: flex; align-items: center; gap: .8rem; }
+  .mark { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center;
+    font-family: "Spectral", Georgia, serif; font-weight: 700; font-size: 1.05rem; }
+  .brand-name { font-family: "Spectral", Georgia, serif; font-weight: 600; font-size: 1.15rem; }
+  .brand-sub { color: var(--muted); font-size: .85rem; }
+
+  .layout { max-width: 1180px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 3rem) 4rem;
+    display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 3rem; align-items: start; }
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; gap: 2rem; } }
+
+  .intro h1 { font-size: clamp(2rem, 4.5vw, 2.9rem); max-width: 18ch; }
+  .intro p { color: var(--ink-soft); max-width: 64ch; margin: 1rem 0 0; }
+
+  details.method { margin-top: 1.5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  details.method summary { cursor: pointer; padding: .85rem 1rem; font-weight: 600; }
+  details.method .body { padding: 0 1rem 1rem; font-size: .92rem; color: var(--ink-soft); }
+  details.method .body p { margin: .6rem 0; max-width: 72ch; }
+  details.method table { border-collapse: collapse; font-size: .88rem; margin: .5rem 0; }
+  details.method th, details.method td { border-bottom: 1px solid var(--line); padding: .35rem .8rem .35rem 0; text-align: left; vertical-align: top; }
+  .tbl-wrap { overflow-x: auto; }
+
+  section.block { margin-top: 2.75rem; }
+  .block > h2 { font-size: 1.45rem; margin-bottom: .35rem; }
+  .block > .hint { color: var(--muted); font-size: .92rem; margin: 0 0 1.25rem; max-width: 68ch; }
+
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+  @media (max-width: 600px) { .fields { grid-template-columns: 1fr; } }
+  .field label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: .3rem; }
+  .field input, .field select { width: 100%; font: inherit; color: var(--ink); background: var(--card);
+    border: 1px solid var(--line); border-radius: 6px; padding: .65rem .75rem; }
+  .field input:focus, .field select:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+  .field.invalid input, .field.invalid select { border-color: var(--error); }
+  .field .note { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+
+  .question { border-top: 1px solid var(--line); padding: 1.6rem 0 .4rem; display: grid; grid-template-columns: 2.4rem minmax(0,1fr); gap: 0 .9rem; }
+  .block .question:first-of-type { border-top: 0; padding-top: .4rem; }
+  .qnum { font-family: "Spectral", Georgia, serif; font-size: 1.5rem; color: var(--brass); line-height: 1.1; font-weight: 600; }
+  .question h3 { font-family: "Figtree", system-ui, sans-serif; font-size: 1.05rem; font-weight: 600; margin: .1rem 0 .3rem; }
+  .question .qhint { font-size: .85rem; color: var(--muted); margin: 0 0 .75rem; }
+  .question.missing h3 { color: var(--error); }
+  .options { display: grid; gap: .5rem; margin-top: .55rem; }
+  .opt { display: flex; gap: .7rem; align-items: flex-start; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: .7rem .85rem; background: var(--card); }
+  .opt:hover { border-color: var(--ink-soft); }
+  .opt input { accent-color: var(--ink); margin-top: .3rem; flex: none; width: 1rem; height: 1rem; }
+  .opt:has(input:checked) { border-color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
+  .opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .declare { margin-top: 2.5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 1rem 1.1rem; }
+  .declare label { display: flex; gap: .7rem; align-items: flex-start; cursor: pointer; font-size: .93rem; }
+  .declare input { accent-color: var(--ink); margin-top: .3rem; width: 1rem; height: 1rem; flex: none; }
+  .declare.missing { border-color: var(--error); }
+
+  aside.panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1.5rem); }
+  @media (max-width: 920px) { aside.panel { position: static; order: -1; } }
+  .panel-inner { border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 1.4rem; }
+  .panel h2 { font-size: 1.15rem; }
+  .progress-text { color: var(--muted); font-size: .9rem; margin: .25rem 0 1.2rem; }
+  .ruler { position: relative; padding-top: 1.9rem; }
+  .ruler-bar { display: grid; grid-template-columns: repeat(4, 1fr); height: 12px; border-radius: 6px; overflow: hidden; }
+  .ruler-bar span:nth-child(1) { background: var(--c1); } .ruler-bar span:nth-child(2) { background: var(--c2); }
+  .ruler-bar span:nth-child(3) { background: var(--c3); } .ruler-bar span:nth-child(4) { background: var(--c4); }
+  .marker { position: absolute; top: 0; left: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
+    transition: left .45s cubic-bezier(.2,.8,.2,1); opacity: 0; }
+  .marker.on { opacity: 1; }
+  .marker b { font-size: .8rem; background: var(--ink); color: var(--paper); border-radius: 4px; padding: .05rem .4rem; white-space: nowrap; }
+  .marker i { width: 2px; height: 22px; background: var(--ink); margin-top: 2px; }
+  .ruler-labels { display: grid; grid-template-columns: repeat(4, 1fr); font-size: .72rem; color: var(--muted); margin-top: .45rem; }
+  .ruler-labels span { text-align: center; }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+  .mini-dims { margin-top: 1.2rem; display: grid; gap: .45rem; font-size: .82rem; }
+  .mini-dims div { display: grid; grid-template-columns: 7.5rem 1fr; gap: .5rem; align-items: center; }
+  .mini-track { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .mini-fill { height: 100%; width: 0; background: var(--ink-soft); transition: width .3s; }
+  .panel-note { font-size: .83rem; color: var(--muted); margin: 1.1rem 0 0; }
+  .actions { display: grid; gap: .6rem; margin-top: 1.3rem; }
+  button { font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; padding: .75rem 1rem; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); }
+  button.secondary { background: transparent; color: var(--ink); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .linklike { background: none; border: 0; padding: 0; color: var(--focus); text-decoration: underline; font-weight: 600; cursor: pointer; }
+  .error-msg { color: var(--error); font-size: .88rem; margin: .7rem 0 0; min-height: 1.2em; }
+  .pdf-status { font-size: .88rem; margin: .8rem 0 0; padding: .7rem .85rem; border-radius: 6px; background: color-mix(in srgb, var(--c1) 12%, transparent); line-height: 1.45; }
+  .pdf-status.is-error { background: color-mix(in srgb, var(--error) 12%, transparent); }
+
+  #result { display: none; margin-top: 3rem; border-radius: 10px; border: 1px solid var(--line); background: var(--card); overflow: hidden; }
+  #result.show { display: block; }
+  .result-head { padding: 1.6rem 1.6rem 1.2rem; border-top: 8px solid var(--profile, var(--ink)); }
+  .result-head .small { color: var(--muted); font-size: .9rem; margin: 0; }
+  .result-head h2 { font-size: clamp(2.2rem, 5vw, 3.2rem); color: var(--profile, var(--ink)); margin: .15rem 0 .4rem; }
+  .result-head .facts { font-size: .95rem; color: var(--ink-soft); display: grid; gap: .15rem; }
+  .result-body { padding: 0 1.6rem 1.6rem; display: grid; gap: 1.5rem; }
+  .result-body p { margin: 0; max-width: 70ch; }
+  .result-body h3 { font-family: "Figtree", system-ui, sans-serif; font-size: .98rem; font-weight: 700; margin-bottom: .55rem; }
+  .dim-row { display: grid; grid-template-columns: minmax(0, 12rem) 1fr 7rem; align-items: center; gap: .7rem; font-size: .9rem; padding: .2rem 0; }
+  .dim-track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .dim-fill { height: 100%; }
+  .dim-row b { font-weight: 600; text-align: right; }
+  @media (max-width: 560px) { .dim-row { grid-template-columns: 1fr 5.5rem; } .dim-track { grid-column: 1 / -1; grid-row: 2; } }
+  .travas { border-left: 3px solid var(--brass); padding: .2rem 0 .2rem .9rem; }
+  .travas p + p { margin-top: .5rem; }
+  ul.products { margin: 0; padding-left: 1.1rem; display: grid; gap: .3rem; max-width: 72ch; }
+  .result-actions { display: flex; flex-wrap: wrap; gap: .7rem; }
+  .disclaimer { font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 0 1rem 2.5rem; max-width: 80ch; margin: 0 auto; }
+
+  #print-report { display: none; }
+  @media print {
+    body > *:not(#print-report) { display: none !important; }
+    #print-report { display: block !important; color: #000; font-family: "Figtree", Arial, sans-serif; font-size: 10pt; }
+    @page { size: A4; margin: 15mm; }
+    #print-report h2 { font-family: "Spectral", Georgia, serif; font-size: 12.5pt; margin: 13pt 0 5pt; border-bottom: 1.5px solid #A8844E; padding-bottom: 2pt; break-after: avoid; }
+    #print-report h3 { font-size: 10pt; margin: 8pt 0 3pt; }
+    #print-report p, #print-report li { margin: 2pt 0; }
+    .pr-head { background: #12343B; color: #fff; padding: 8pt 10pt; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pr-head strong { font-family: "Spectral", Georgia, serif; font-size: 14pt; }
+    .pr-head span { font-size: 9pt; }
+    .pr-kv th { text-align: left; color: #555; padding: 1pt 14pt 1pt 0; font-weight: 600; vertical-align: top; }
+    .pr-result { border-left: 5px solid; padding: 2pt 0 2pt 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pr-profile { font-family: "Spectral", Georgia, serif; font-size: 22pt; font-weight: 700; line-height: 1.1; }
+    .pr-qs li { margin-bottom: 5pt; break-inside: avoid; }
+    .pr-qs em { color: #666; font-style: normal; font-size: 8.5pt; }
+    .pr-sign { display: flex; gap: 30pt; margin-top: 38pt; break-inside: avoid; font-size: 9pt; color: #444; }
+    .pr-sign div { flex: 1; } .pr-sign span { display: block; border-top: 1px solid #777; margin-bottom: 4pt; }
+  }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="mark" aria-hidden="true">GN</div>
+  <div>
+    <div class="brand-name">GN Consultoria</div>
+    <div class="brand-sub">Consultoria de valores mobiliários</div>
+  </div>
+</header>
+
+<main class="layout">
+  <div>
+    <div class="intro">
+      <h1>Análise de perfil do investidor</h1>
+      <p>Antes de recomendar qualquer investimento, precisamos entender seus objetivos, sua situação financeira e seu conhecimento sobre o mercado, como exige a Resolução CVM nº 30/2021. Responda com sinceridade: o perfil é definido pelas suas respostas e não pode ser escolhido. Leva cerca de 8 minutos.</p>
+    </div>
+
+    <details class="method">
+      <summary>Como o perfil é calculado</summary>
+      <div class="body">
+        <p>O questionário cobre as três dimensões mínimas exigidas pelo art. 3º da Resolução CVM nº 30/2021 e pelo art. 21 das Regras e Procedimentos do Código ANBIMA de Distribuição. Cada resposta vale de 1 a 4 pontos. A pontuação de cada dimensão é convertida em uma escala de 0% a 100%.</p>
+        <div class="tbl-wrap"><table>
+          <tr><th>Dimensão</th><th>O que avalia</th><th>Peso</th></tr>
+          <tr><td>Objetivos</td><td>Prazo, finalidade e preferência declarada quanto a riscos</td><td>40%</td></tr>
+          <tr><td>Situação financeira</td><td>Receitas regulares, patrimônio e necessidade futura de recursos</td><td>30%</td></tr>
+          <tr><td>Conhecimento</td><td>Produtos conhecidos, natureza, volume, frequência e período das operações, formação e experiência</td><td>30%</td></tr>
+        </table></div>
+        <p>A média ponderada define o perfil de base: até 25% Conservador, até 50% Moderado, até 75% Arrojado e acima disso Agressivo. Em seguida, duas travas são aplicadas.</p>
+        <p><strong>Trava de liquidez.</strong> Quem declara ser avesso a riscos e precisar de liquidez é classificado como Conservador, independentemente das demais respostas, conforme alinhamento entre CVM e ANBIMA citado no Guia CVM de Suitability.</p>
+        <p><strong>Trava de adequação.</strong> Um produto só é adequado se for compatível com objetivos, situação financeira e conhecimento ao mesmo tempo. Por isso, o perfil final não pode ficar mais de um nível acima da dimensão mais baixa.</p>
+        <div class="tbl-wrap"><table>
+          <tr><th>Perfil GN</th><th>Equivalência ANBIMA</th><th>Risco máximo dos produtos</th></tr>
+          <tr><td>Conservador</td><td>Perfil 1</td><td>até 1,5</td></tr>
+          <tr><td>Moderado</td><td>Perfil 2</td><td>até 3,0</td></tr>
+          <tr><td>Arrojado</td><td>Perfil 3, com limite interno</td><td>até 4,0</td></tr>
+          <tr><td>Agressivo</td><td>Perfil 3</td><td>até 5,0</td></tr>
+        </table></div>
+        <p>A escala de risco dos produtos vai de 0,5 a 5, conforme a tabela de pontuação mínima do art. 29 das Regras e Procedimentos ANBIMA. Na adequação por carteira, vale a média ponderada dos pontos de risco dos produtos.</p>
+      </div>
+    </details>
+
+    <section class="block" aria-labelledby="dados-t">
+      <h2 id="dados-t">Identificação</h2>
+      <p class="hint">Esses dados aparecem no relatório em PDF.</p>
+      <div class="fields">
+        <div class="field"><label for="nome">Nome completo</label><input id="nome" autocomplete="name"></div>
+        <div class="field"><label for="cpf">CPF</label><input id="cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
+        <div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email"></div>
+        <div class="field"><label for="telefone">Telefone</label><input id="telefone" type="tel" autocomplete="tel" placeholder="(00) 00000-0000"></div>
+        <div class="field"><label for="tipo">Tipo de análise</label>
+          <select id="tipo">
+            <option>Análise inicial</option>
+            <option>Atualização periódica</option>
+            <option>Atualização por mudança relevante</option>
+          </select></div>
+        <div class="field"><label for="classif">Classificação do investidor</label>
+          <select id="classif">
+            <option>Investidor de varejo (não qualificado)</option>
+            <option>Investidor qualificado (art. 12 da Resolução CVM 30)</option>
+            <option>Investidor profissional (art. 11 da Resolução CVM 30)</option>
+          </select>
+          <div class="note">Informativo. Pessoas físicas qualificadas por patrimônio ou certificação continuam sujeitas à análise de perfil.</div></div>
+        <div class="field"><label for="consultor">Consultor responsável</label><input id="consultor"></div>
+      </div>
+    </section>
+
+    <div id="questions"></div>
+
+    <div class="declare" id="declare-box">
+      <label><input type="checkbox" id="declare">
+        <span>Declaro que as informações acima são verdadeiras, completas e refletem meus objetivos, minha situação financeira e meu conhecimento. Comunicarei à GN Consultoria qualquer mudança relevante nessas informações.</span></label>
+    </div>
+
+    <section id="result" aria-live="polite">
+      <div class="result-head">
+        <p class="small">Seu perfil de investidor é</p>
+        <h2 id="r-profile"></h2>
+        <div class="facts" id="r-facts"></div>
+      </div>
+      <div class="result-body">
+        <p id="r-desc"></p>
+        <div><h3>Resultado por dimensão</h3><div id="r-dims"></div></div>
+        <div><h3>Regras aplicadas</h3><div class="travas" id="r-travas"></div></div>
+        <div><h3>Produtos compatíveis com o seu perfil</h3>
+          <p style="font-size:.9rem;color:var(--muted);margin-bottom:.6rem">Exemplos de categorias pela pontuação mínima de risco ANBIMA. Cada produto ainda passa por análise individual antes de ser recomendado.</p>
+          <ul class="products" id="r-products"></ul></div>
+        <div class="result-actions">
+          <button type="button" id="btn-pdf-2">Gerar PDF</button>
+          <button type="button" class="secondary" id="btn-print">Imprimir / Salvar como PDF</button>
+          <button type="button" class="secondary" id="btn-reset">Refazer questionário</button>
+        </div>
+        <div class="pdf-status" role="status" hidden></div>
+        <p class="disclaimer">A GN Consultoria não recomenda produtos inadequados ao seu perfil. Se você decidir investir em um produto inadequado ou estiver com o perfil desatualizado, será alertado sobre os motivos da divergência e precisará assinar uma declaração de ciência. Rentabilidade passada não é garantia de rentabilidade futura.</p>
+      </div>
+    </section>
+  </div>
+
+  <aside class="panel" aria-label="Andamento">
+    <div class="panel-inner">
+      <h2>Seu andamento</h2>
+      <p class="progress-text" id="progress"></p>
+      <div class="ruler" aria-hidden="true">
+        <div class="marker" id="marker"><b id="marker-pts">0%</b><i></i></div>
+        <div class="ruler-bar"><span></span><span></span><span></span><span></span></div>
+        <div class="ruler-labels"><span>Conservador</span><span>Moderado</span><span>Arrojado</span><span>Agressivo</span></div>
+      </div>
+      <div class="mini-dims" id="mini-dims"></div>
+      <p class="panel-note">O marcador mostra a pontuação ponderada até agora. O perfil final ainda passa pelas travas de liquidez e de adequação.</p>
+      <div class="actions">
+        <button type="button" id="btn-calc">Ver meu perfil</button>
+        <button type="button" class="secondary" id="btn-pdf" disabled>Gerar PDF</button>
+      </div>
+      <p class="error-msg" id="error" role="alert"></p>
+      <div class="pdf-status" role="status" hidden></div>
+    </div>
+  </aside>
+</main>
+
+<footer>Referências: Resolução CVM nº 30/2021; Guia CVM de Suitability (dez/2022); Regras e Procedimentos do Código ANBIMA de Distribuição de Produtos de Investimento (vigente a partir de 22/09/2025).</footer>
+
+<div id="print-report" aria-hidden="true"></div>
+
+<script>
+/* ===== Parâmetros da política interna (ajuste com o compliance) ===== */
+const VALIDADE_MESES = 24; // revisão do perfil pela política da GN
+const SECTIONS = [
+  { id: "O", title: "Objetivos de investimento", weight: 0.40,
+    hint: "Prazo do investimento, preferências quanto a riscos e finalidade (art. 3º, §1º, da Resolução CVM 30).",
+    questions: [
+      { id: "O1", q: "Qual é a principal finalidade deste investimento?", o: [
+        "Preservar o capital ou formar reserva para emergências",
+        "Complementar a renda com baixo risco",
+        "Acumular patrimônio no longo prazo, como para a aposentadoria",
+        "Maximizar o retorno, aceitando riscos elevados" ] },
+      { id: "O2", q: "Por quanto tempo pretende manter os recursos investidos?", o: [
+        "Até 1 ano", "De 1 a 3 anos", "De 3 a 5 anos", "Mais de 5 anos" ] },
+      { id: "O3", q: "Qual frase descreve melhor sua preferência em relação a riscos?", o: [
+        "Não aceito perdas. Priorizo segurança e liquidez",
+        "Aceito pequenas oscilações ocasionais para ganhar um pouco mais",
+        "Aceito oscilações moderadas e perdas temporárias em busca de retorno maior",
+        "Aceito perdas relevantes em busca de retornos elevados" ],
+        flag: { index: 0, key: "averse" } },
+      { id: "O4", q: "Se seus investimentos caíssem 15% em seis meses, o que você faria?", o: [
+        "Resgataria tudo", "Resgataria uma parte", "Manteria e aguardaria a recuperação", "Aproveitaria para investir mais" ] },
+      { id: "O5", q: "Qual a maior perda que aceitaria em 12 meses, em busca de ganhos maiores no longo prazo?", o: [
+        "Nenhuma", "Até 5%", "Até 15%", "Mais de 15%" ] }
+    ] },
+  { id: "F", title: "Situação financeira", weight: 0.30,
+    hint: "Receitas regulares, valor e composição do patrimônio e necessidade futura de recursos (art. 3º, §2º).",
+    questions: [
+      { id: "F1", q: "Qual é sua renda mensal regular (salário, pró-labore, aluguéis, aposentadoria etc.)?", o: [
+        "Até R$ 5 mil", "De R$ 5 mil a R$ 15 mil", "De R$ 15 mil a R$ 40 mil", "Acima de R$ 40 mil" ] },
+      { id: "F2", q: "Qual é o valor aproximado do seu patrimônio total?", o: [
+        "Até R$ 100 mil", "De R$ 100 mil a R$ 500 mil", "De R$ 500 mil a R$ 2 milhões", "Acima de R$ 2 milhões" ] },
+      { id: "F3", type: "multi", scored: false, q: "Quais ativos compõem seu patrimônio?", hint: "Marque todos que se aplicam.", o: [
+        { t: "Imóveis" }, { t: "Aplicações financeiras" }, { t: "Previdência privada" },
+        { t: "Participação em empresas" }, { t: "Veículos e outros bens" }, { t: "Não possuo patrimônio relevante" } ], none: 5 },
+      { id: "F4", q: "Quanto do seu patrimônio financeiro este investimento representa?", o: [
+        "Mais de 75%", "De 50% a 75%", "De 25% a 50%", "Menos de 25%" ] },
+      { id: "F5", q: "Você pode precisar desses recursos antes do prazo planejado?", o: [
+        "Sim, posso precisar deles a qualquer momento",
+        "Talvez precise de uma parte em 1 a 3 anos",
+        "É improvável, pois tenho reserva de emergência separada",
+        "Não, esses recursos não serão necessários" ],
+        flag: { index: 0, key: "liquidity" } },
+      { id: "F6", q: "Quanto da sua renda mensal fica comprometido com despesas fixas e dívidas?", o: [
+        "Mais de 80%", "De 50% a 80%", "De 30% a 50%", "Menos de 30%" ] }
+    ] },
+  { id: "K", title: "Conhecimento e experiência", weight: 0.30,
+    hint: "Produtos com que tem familiaridade; natureza, volume, frequência e período das operações; formação e experiência profissional (art. 3º, §3º).",
+    questions: [
+      { id: "K1", type: "multi", q: "Com quais produtos você já investiu ou tem familiaridade?", hint: "Marque todos que se aplicam.", o: [
+        { t: "Poupança, CDB, LCI, LCA ou Tesouro Selic", lv: 1 },
+        { t: "Tesouro prefixado ou IPCA+, fundos de renda fixa, previdência privada", lv: 2 },
+        { t: "Debêntures, CRI, CRA, fundos multimercado", lv: 3 },
+        { t: "Ações, fundos imobiliários (FII), ETFs, fundos de ações", lv: 3 },
+        { t: "Derivativos (opções, futuros, termo), COE, FIDC ou FIP", lv: 4 },
+        { t: "Criptoativos ou investimentos no exterior", lv: 4 },
+        { t: "Nenhum destes", lv: 1 } ], none: 6 },
+      { id: "K2", q: "Há quanto tempo você investe no mercado financeiro ou de capitais?", o: [
+        "Nunca investi ou há menos de 1 ano", "De 1 a 3 anos", "De 3 a 5 anos", "Há mais de 5 anos" ] },
+      { id: "K3", q: "Com que frequência realizou operações nos últimos 24 meses?", o: [
+        "Nenhuma ou raramente", "Algumas vezes por ano", "Mensalmente", "Semanalmente ou mais" ] },
+      { id: "K4", q: "Qual o volume médio que você aplica ou movimenta por ano?", o: [
+        "Até R$ 10 mil", "De R$ 10 mil a R$ 100 mil", "De R$ 100 mil a R$ 500 mil", "Acima de R$ 500 mil" ] },
+      { id: "K5", q: "Qual é sua formação acadêmica?", o: [
+        "Ensino fundamental ou médio",
+        "Ensino superior em áreas não relacionadas a finanças",
+        "Ensino superior em economia, administração, contabilidade, engenharia ou áreas afins",
+        "Pós-graduação em finanças ou certificação do mercado (CPA-20, CEA, CFP, CNPI, CFA)" ] },
+      { id: "K6", q: "Qual é sua experiência profissional relacionada ao mercado financeiro?", o: [
+        "Nenhuma",
+        "Indireta, como em áreas administrativas ou contábeis",
+        "Atuo ou atuei na área financeira de empresas",
+        "Atuo ou atuei no mercado financeiro ou de capitais" ] }
+    ] }
+];
+
+const PROFILES = [
+  { name: "Conservador", anbima: "Perfil 1", limit: "1,5", color: "--c1", rgb: [79,138,116],
+    desc: "Você declara baixa tolerância a risco e prioriza investimentos com liquidez. A carteira deve se concentrar em produtos de baixo risco de crédito, de mercado e de liquidez.",
+    products: [
+      "Tesouro Selic (LFT) e fundos de renda fixa simples ou referenciados DI (0,50)",
+      "CDB, LCI, LCA e LC pós-fixados de emissor com grau de investimento, até 4 anos (0,75 a 1,00)",
+      "Os mesmos títulos prefixados, até 2 anos (1,00)",
+      "Títulos públicos, exceto LFT, com até 3 anos (1,00)",
+      "Fundos de renda fixa de duração baixa (1,00 a 1,25) e de duração média soberano ou grau de investimento (1,50)" ] },
+  { name: "Moderado", anbima: "Perfil 2", limit: "3,0", color: "--c2", rgb: [62,110,158],
+    desc: "Você declara média tolerância a risco e busca preservar o capital no longo prazo, com disposição para destinar uma parte dos recursos a investimentos de maior risco.",
+    products: [
+      "Todos os produtos compatíveis com o perfil Conservador",
+      "Títulos públicos acima de 3 anos (1,75 a 2,75)",
+      "Debêntures, CRI e CRA com grau de investimento (1,00 a 3,00)",
+      "Fundos de renda fixa crédito livre ou indexados à inflação (1,75 a 2,00)",
+      "Fundos multimercado (2,25 a 2,50) e COE com capital protegido de emissor com grau de investimento (1,50 a 3,00)",
+      "FII de títulos e valores mobiliários ou de tijolo com gestão definida (3,00) e fundos cambiais (3,00)" ] },
+  { name: "Arrojado", anbima: "Perfil 3, com limite interno", limit: "4,0", color: "--c3", rgb: [192,134,42],
+    desc: "Você aceita oscilações relevantes e perdas temporárias em busca de maior retorno, e tem conhecimento e situação financeira compatíveis com renda variável. Pela política da GN, os produtos ficam limitados à pontuação de risco 4,0.",
+    products: [
+      "Todos os produtos compatíveis com o perfil Moderado",
+      "Fundos de ações (3,50) e FII de tijolo com gestão ativa (3,50)",
+      "Fundos multimercado e de ações com investimento no exterior (3,50)",
+      "Ações, BDRs e fundos mono ação (4,00)",
+      "Derivativos isolados (4,00), preferencialmente com finalidade de proteção" ] },
+  { name: "Agressivo", anbima: "Perfil 3", limit: "5,0", color: "--c4", rgb: [155,59,59],
+    desc: "Você declara tolerância a risco e aceita potenciais perdas em busca de maiores retornos. Tem conhecimento, experiência e situação financeira para avaliar produtos complexos.",
+    products: [
+      "Todos os produtos compatíveis com o perfil Arrojado",
+      "FIP, FII de incorporação e cotas únicas ou subordinadas de FIDC (até 4,50)",
+      "Títulos de crédito e COE sem grau de investimento (até 4,50)",
+      "Criptoativos e produtos com pontuação agravada pela metodologia da GN (até 5,00)",
+      "Produtos complexos (COE, debêntures conversíveis, FIDC e FIP) passam por análise específica de riscos e precificação" ] }
+];
+
+/* ===== Utilitários ===== */
+const $ = id => document.getElementById(id);
+const levelOf = n => n < 0.25 ? 1 : n < 0.5 ? 2 : n < 0.75 ? 3 : 4;
+const pct = n => Math.round(n * 100) + "%";
+const allQ = SECTIONS.flatMap(s => s.questions);
+const fmtDate = d => d.toLocaleDateString("pt-BR");
+
+function cpfValido(v) {
+  const c = v.replace(/\D/g, "");
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  for (const len of [9, 10]) {
+    let s = 0;
+    for (let i = 0; i < len; i++) s += +c[i] * (len + 1 - i);
+    let d = (s * 10) % 11; if (d === 10) d = 0;
+    if (d !== +c[len]) return false;
+  }
+  return true;
+}
+
+/* ===== Montagem do questionário ===== */
+let num = 0;
+SECTIONS.forEach(sec => {
+  const block = document.createElement("section");
+  block.className = "block";
+  block.innerHTML = `<h2>${sec.title}</h2><p class="hint">${sec.hint}</p>`;
+  sec.questions.forEach(q => {
+    num++; q.num = num;
+    const multi = q.type === "multi";
+    const opts = q.o.map((opt, j) => {
+      const text = multi ? opt.t : opt;
+      return `<label class="opt"><input type="${multi ? "checkbox" : "radio"}" name="${q.id}" value="${j}"><span>${text}</span></label>`;
+    }).join("");
+    const div = document.createElement("div");
+    div.className = "question"; div.id = "q-" + q.id;
+    div.innerHTML = `<div class="qnum">${num}</div><div><h3 id="t-${q.id}">${q.q}</h3>${q.hint ? `<p class="qhint">${q.hint}</p>` : ""}
+      <div class="options" role="${multi ? "group" : "radiogroup"}" aria-labelledby="t-${q.id}">${opts}</div></div>`;
+    block.appendChild(div);
+  });
+  $("questions").appendChild(block);
+});
+$("mini-dims").innerHTML = SECTIONS.map(s => `<div><span>${s.title.split(" ")[0]}</span><div class="mini-track"><div class="mini-fill" id="mini-${s.id}"></div></div></div>`).join("");
+
+function answerOf(q) {
+  if (q.type === "multi") {
+    const arr = [...document.querySelectorAll(`input[name="${q.id}"]:checked`)].map(i => +i.value);
+    return arr.length ? arr : null;
+  }
+  const c = document.querySelector(`input[name="${q.id}"]:checked`);
+  return c ? +c.value : null;
+}
+function scoreOf(q, a) {
+  if (q.type === "multi") return a.includes(q.none) ? 1 : Math.max(...a.map(i => q.o[i].lv));
+  return a + 1;
+}
+function answerText(q, a) {
+  if (q.type === "multi") return a.map(i => q.o[i].t).join("; ");
+  return q.o[a];
+}
+
+function compute() {
+  const dims = SECTIONS.map(sec => {
+    let raw = 0, cnt = 0, total = 0;
+    sec.questions.forEach(q => {
+      if (q.scored === false) return;
+      total++;
+      const a = answerOf(q);
+      if (a !== null) { raw += scoreOf(q, a); cnt++; }
+    });
+    const norm = cnt ? (raw - cnt) / (3 * cnt) : null;
+    return { sec, raw, cnt, total, norm, level: norm === null ? null : levelOf(norm) };
+  });
+  const answered = dims.filter(d => d.norm !== null);
+  const wsum = answered.reduce((s, d) => s + d.sec.weight, 0);
+  const overall = wsum ? answered.reduce((s, d) => s + d.norm * d.sec.weight, 0) / wsum : null;
+  return { dims, overall };
+}
+
+function updateProgress() {
+  const done = allQ.filter(q => answerOf(q) !== null).length;
+  $("progress").textContent = `${done} de ${allQ.length} perguntas respondidas`;
+  const { dims, overall } = compute();
+  dims.forEach(d => { $("mini-" + d.sec.id).style.width = d.norm === null ? "0" : Math.max(3, d.norm * 100) + "%"; });
+  const m = $("marker");
+  if (overall === null) { m.classList.remove("on"); return; }
+  m.style.left = Math.max(2, Math.min(98, overall * 100)) + "%";
+  $("marker-pts").textContent = pct(overall);
+  m.classList.add("on");
+}
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.type === "checkbox" && t.name) {
+    const q = allQ.find(x => x.id === t.name);
+    if (q && t.checked) {
+      if (+t.value === q.none) document.querySelectorAll(`input[name="${q.id}"]`).forEach(i => { if (i !== t) i.checked = false; });
+      else document.querySelector(`input[name="${q.id}"][value="${q.none}"]`).checked = false;
+    }
+  }
+  const qd = t.closest(".question"); if (qd) qd.classList.remove("missing");
+  if (t.id === "declare") $("declare-box").classList.remove("missing");
+  if (t.name || t.id === "declare") {
+    updateProgress();
+    if ($("result").classList.contains("show")) { $("result").classList.remove("show"); $("btn-pdf").disabled = true; current = null; hideStatus(); }
+  }
+});
+
+$("cpf").addEventListener("input", e => {
+  let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+  v = v.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  e.target.value = v;
+});
+
+function validate() {
+  let first = null; const msgs = [];
+  const nomeOk = $("nome").value.trim().split(/\s+/).length >= 2;
+  $("nome").parentElement.classList.toggle("invalid", !nomeOk);
+  if (!nomeOk) { msgs.push("Informe o nome completo."); first = first || $("nome"); }
+  const cpfOk = cpfValido($("cpf").value);
+  $("cpf").parentElement.classList.toggle("invalid", !cpfOk);
+  if (!cpfOk) { msgs.push("Informe um CPF válido."); first = first || $("cpf"); }
+  let missing = 0;
+  allQ.forEach(q => { const miss = answerOf(q) === null; $("q-" + q.id).classList.toggle("missing", miss); if (miss) { missing++; first = first || $("q-" + q.id); } });
+  if (missing) msgs.push(missing === 1 ? "Falta responder 1 pergunta." : `Faltam responder ${missing} perguntas.`);
+  const decl = $("declare").checked;
+  $("declare-box").classList.toggle("missing", !decl);
+  if (!decl) { msgs.push("Confirme a declaração de veracidade."); first = first || $("declare-box"); }
+  $("error").textContent = msgs.join(" ");
+  if (first) { first.scrollIntoView({ behavior: "smooth", block: "center" }); if (first.focus) first.focus({ preventScroll: true }); }
+  return !first;
+}
+
+/* ===== Cálculo do perfil ===== */
+let current = null;
+function calculate() {
+  if (!validate()) return;
+  const { dims, overall } = compute();
+  const base = levelOf(overall);
+  let level = base;
+  const travas = [];
+  const minDim = dims.reduce((m, d) => d.level < m.level ? d : m, dims[0]);
+  if (level > minDim.level + 1) {
+    level = minDim.level + 1;
+    travas.push(`Trava de adequação: a dimensão "${minDim.sec.title}" indica o perfil ${PROFILES[minDim.level - 1].name}. Como o produto precisa ser compatível com as três dimensões ao mesmo tempo, o perfil foi limitado de ${PROFILES[base - 1].name} para ${PROFILES[level - 1].name}.`);
+  }
+  const flags = {};
+  allQ.forEach(q => { if (q.flag && answerOf(q) === q.flag.index) flags[q.flag.key] = true; });
+  if (flags.averse && flags.liquidity) {
+    const antes = PROFILES[level - 1].name;
+    level = 1;
+    travas.push(`Trava de liquidez (CVM e ANBIMA): você declarou não aceitar perdas e poder precisar dos recursos a qualquer momento. Nesse caso, o perfil é obrigatoriamente Conservador${antes !== "Conservador" ? `, e não ${antes}` : ""}.`);
+  }
+  if (!travas.length) travas.push("Nenhuma trava foi aplicada. O perfil corresponde à pontuação ponderada das três dimensões.");
+
+  const date = new Date();
+  const valid = new Date(date); valid.setMonth(valid.getMonth() + VALIDADE_MESES);
+  current = {
+    date, valid, dims, overall, base, level, travas, profile: PROFILES[level - 1],
+    cliente: {
+      nome: $("nome").value.trim(), cpf: $("cpf").value, email: $("email").value.trim() || "Não informado",
+      telefone: $("telefone").value.trim() || "Não informado", tipo: $("tipo").value, classif: $("classif").value,
+      consultor: $("consultor").value.trim() || "Não informado"
+    },
+    answers: SECTIONS.map(sec => ({ title: sec.title, items: sec.questions.map(q => {
+      const a = answerOf(q);
+      return { num: q.num, q: q.q, a: answerText(q, a), pts: q.scored === false ? null : scoreOf(q, a) };
+    }) }))
+  };
+  renderResult();
+}
+
+function renderResult() {
+  const c = current, p = c.profile, res = $("result");
+  res.style.setProperty("--profile", `var(${p.color})`);
+  $("r-profile").textContent = p.name;
+  $("r-facts").innerHTML = `<span>Equivalente ao ${p.anbima} da ANBIMA. Produtos com pontuação de risco até ${p.limit}.</span>
+    <span>Pontuação ponderada: ${pct(c.overall)}. Válido até ${fmtDate(c.valid)} ou até uma mudança relevante na sua situação.</span>`;
+  $("r-desc").textContent = p.desc;
+  $("r-dims").innerHTML = c.dims.map(d => `<div class="dim-row"><span>${d.sec.title}</span>
+    <div class="dim-track"><div class="dim-fill" style="width:${Math.max(3, d.norm * 100)}%;background:var(${PROFILES[d.level - 1].color})"></div></div>
+    <b>${PROFILES[d.level - 1].name} (${pct(d.norm)})</b></div>`).join("");
+  $("r-travas").innerHTML = c.travas.map(t => `<p>${t}</p>`).join("");
+  $("r-products").innerHTML = p.products.map(x => `<li>${x}</li>`).join("");
+  res.classList.add("show");
+  $("btn-pdf").disabled = false;
+  $("error").textContent = ""; hideStatus();
+  res.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetAll() {
+  document.querySelectorAll("input").forEach(i => { if (i.type === "radio" || i.type === "checkbox") i.checked = false; else i.value = ""; });
+  document.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+  document.querySelectorAll(".missing,.invalid").forEach(el => el.classList.remove("missing", "invalid"));
+  $("result").classList.remove("show"); $("btn-pdf").disabled = true; current = null; $("error").textContent = ""; hideStatus();
+  updateProgress(); window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ===== Textos do relatório ===== */
+const DECLARACAO = [
+  "Declaro que as informações prestadas neste questionário são verdadeiras e completas e refletem meus objetivos de investimento, minha situação financeira e meu conhecimento em matéria de investimentos, e que comunicarei à GN Consultoria qualquer alteração relevante.",
+  "Estou ciente de que: (i) meu perfil resulta da metodologia de suitability da GN Consultoria e não pode ser escolhido ou alterado por mim sem nova análise; (ii) a GN não recomendará produtos, serviços ou operações inadequados ao meu perfil, nem quando o perfil estiver desatualizado; (iii) caso eu decida realizar operação inadequada, serei alertado sobre as causas da divergência e deverei firmar declaração expressa de ciência; (iv) o perfil deve ser atualizado periodicamente, nos termos da Resolução CVM nº 30/2021 e da política interna da GN; e (v) rentabilidade passada não é garantia de rentabilidade futura."
+];
+
+/* ===== PDF (jsPDF) ===== */
+function buildPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, M = 16, CW = W - 2 * M;
+  const INK = [18, 52, 59], MUTED = [90, 103, 112], BRASS = [168, 132, 78], TXT = [40, 40, 40];
+  const c = current, p = c.profile;
+  let y = 0;
+
+  const header = () => {
+    doc.setFillColor(...INK); doc.rect(0, 0, W, 20, "F");
+    doc.setTextColor(255); doc.setFont("times", "bold"); doc.setFontSize(15); doc.text("GN Consultoria", M, 13);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    doc.text("Análise de Perfil do Investidor (Suitability)", W - M, 13, { align: "right" });
+    y = 29;
+  };
+  const ensure = h => { if (y + h > 280) { doc.addPage(); header(); } };
+  const title = t => {
+    ensure(16);
+    doc.setFont("times", "bold"); doc.setFontSize(12.5); doc.setTextColor(...INK); doc.text(t, M, y); y += 2;
+    doc.setDrawColor(...BRASS); doc.setLineWidth(0.5); doc.line(M, y, M + 28, y); y += 6;
+  };
+  const para = (t, size = 9.5, color = TXT, indent = 0, lh = 4.5) => {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(t, CW - indent);
+    lines.forEach(l => { ensure(lh); doc.text(l, M + indent, y); y += lh; });
+  };
+  const kv = (rows) => {
+    doc.setFontSize(9.5);
+    rows.forEach(([k, v]) => {
+      const lines = doc.splitTextToSize(String(v), CW - 42);
+      ensure(lines.length * 4.6 + 1);
+      doc.setFont("helvetica", "bold"); doc.setTextColor(...MUTED); doc.text(k, M, y);
+      doc.setFont("helvetica", "normal"); doc.setTextColor(...TXT); doc.text(lines, M + 42, y);
+      y += lines.length * 4.6 + 0.8;
+    });
+  };
+
+  header();
+  title("Identificação");
+  kv([["Nome", c.cliente.nome], ["CPF", c.cliente.cpf], ["E-mail", c.cliente.email], ["Telefone", c.cliente.telefone],
+      ["Tipo de análise", c.cliente.tipo], ["Classificação", c.cliente.classif], ["Consultor", c.cliente.consultor],
+      ["Data da análise", fmtDate(c.date)], ["Válido até", `${fmtDate(c.valid)} (ou até mudança relevante)`]]);
+  y += 3;
+
+  title("Resultado");
+  ensure(26);
+  doc.setFillColor(...p.rgb); doc.rect(M, y, 3, 21, "F");
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MUTED); doc.text("Perfil do investidor", M + 7, y + 4.5);
+  doc.setFont("times", "bold"); doc.setFontSize(22); doc.setTextColor(...p.rgb); doc.text(p.name, M + 7, y + 13.5);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MUTED);
+  doc.text(`Equivalente ao ${p.anbima} ANBIMA. Risco máximo dos produtos: ${p.limit}.`, M + 7, y + 19.5);
+  // régua
+  const rx = W - M - 64, rw = 64, ry = y + 8, segs = PROFILES.map(x => x.rgb);
+  segs.forEach((col, i) => { doc.setFillColor(...col); doc.rect(rx + i * rw / 4, ry, rw / 4, 3, "F"); });
+  const mx = rx + rw * c.overall;
+  doc.setFillColor(...INK); doc.triangle(mx - 1.8, ry - 3, mx + 1.8, ry - 3, mx, ry - 0.3, "F");
+  doc.setFontSize(6.3); doc.setTextColor(...MUTED);
+  PROFILES.forEach((x, i) => doc.text(x.name, rx + i * rw / 4 + rw / 8, ry + 7, { align: "center" }));
+  doc.text(`Pontuação ponderada: ${pct(c.overall)}`, rx + rw / 2, ry + 11.5, { align: "center" });
+  y += 27;
+  para(p.desc); y += 2;
+
+  ensure(8); doc.setFont("helvetica", "bold"); doc.setFontSize(9.8); doc.setTextColor(...INK); doc.text("Resultado por dimensão", M, y); y += 5.5;
+  c.dims.forEach(d => {
+    ensure(6.5);
+    const col = PROFILES[d.level - 1].rgb;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...TXT); doc.text(`${d.sec.title} (peso ${Math.round(d.sec.weight * 100)}%)`, M, y);
+    doc.setFillColor(225, 230, 228); doc.rect(M + 66, y - 3, 70, 3.4, "F");
+    doc.setFillColor(...col); doc.rect(M + 66, y - 3, Math.max(1.5, 70 * d.norm), 3.4, "F");
+    doc.text(`${pct(d.norm)}  ${PROFILES[d.level - 1].name}`, W - M, y, { align: "right" });
+    y += 6.2;
+  });
+  y += 2;
+  ensure(8); doc.setFont("helvetica", "bold"); doc.setFontSize(9.8); doc.setTextColor(...INK); doc.text("Regras aplicadas", M, y); y += 5;
+  c.travas.forEach(t => { para("• " + t, 9); y += 1; });
+  y += 2;
+  ensure(8); doc.setFont("helvetica", "bold"); doc.setFontSize(9.8); doc.setTextColor(...INK); doc.text("Produtos compatíveis (pontuação mínima de risco ANBIMA)", M, y); y += 5;
+  p.products.forEach(x => { para("• " + x, 9); y += 0.6; });
+  y += 4;
+
+  title("Questionário e respostas");
+  c.answers.forEach(sec => {
+    ensure(10);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...BRASS); doc.text(sec.title, M, y); y += 5.5;
+    sec.items.forEach(it => {
+      const ql = doc.splitTextToSize(`${it.num}. ${it.q}`, CW - 14);
+      const al = doc.splitTextToSize(it.a, CW - 20);
+      ensure(ql.length * 4.5 + al.length * 4.5 + 3);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9.3); doc.setTextColor(...INK); doc.text(ql, M, y); y += ql.length * 4.5;
+      doc.setFont("helvetica", "normal"); doc.setTextColor(...TXT); doc.text(al, M + 5, y);
+      doc.setFontSize(8); doc.setTextColor(...MUTED);
+      doc.text(it.pts === null ? "informativo" : `${it.pts} pt${it.pts > 1 ? "s" : ""}`, W - M, y, { align: "right" });
+      y += al.length * 4.5 + 2.5;
+    });
+    y += 1.5;
+  });
+
+  title("Metodologia");
+  para("Três dimensões exigidas pelo art. 3º da Resolução CVM nº 30/2021: objetivos (peso 40%), situação financeira (30%) e conhecimento (30%). Cada resposta vale de 1 a 4 pontos, e a média ponderada define o perfil de base (até 25% Conservador, até 50% Moderado, até 75% Arrojado, acima Agressivo). Trava de liquidez: cliente avesso a riscos e com necessidade de liquidez é classificado como Conservador (alinhamento CVM e ANBIMA). Trava de adequação: o perfil final não pode superar em mais de um nível a dimensão mais baixa. Limites de risco dos produtos conforme Regras e Procedimentos ANBIMA de Distribuição: Perfil 1 até 1,5; Perfil 2 até 3,0; Perfil 3 até 5,0 (Arrojado com limite interno de 4,0).", 8.6, MUTED, 0, 4.1);
+  y += 3;
+
+  title("Declaração do cliente");
+  DECLARACAO.forEach(t => { para(t, 8.8, TXT, 0, 4.2); y += 1.5; });
+  ensure(34); y += 20;
+  const colW = (CW - 14) / 2;
+  doc.setDrawColor(120); doc.setLineWidth(0.3);
+  doc.line(M, y, M + colW, y); doc.line(M + colW + 14, y, W - M, y);
+  doc.setFontSize(8.5); doc.setTextColor(...MUTED);
+  doc.text(c.cliente.nome, M, y + 5); doc.text("Assinatura do cliente", M, y + 9.5);
+  doc.text(c.cliente.consultor === "Não informado" ? "GN Consultoria" : c.cliente.consultor, M + colW + 14, y + 5);
+  doc.text("Consultor responsável (GN Consultoria)", M + colW + 14, y + 9.5);
+
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFontSize(7.2); doc.setTextColor(...MUTED);
+    doc.text(`Resolução CVM nº 30/2021 · Guia CVM de Suitability · Código ANBIMA de Distribuição. Gerado em ${fmtDate(c.date)}.`, M, 290);
+    doc.text(`Página ${i} de ${pages}`, W - M, 290, { align: "right" });
+  }
+  return doc;
+}
+
+function fileName() {
+  const n = current.cliente.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "cliente";
+  return `Suitability-GN-${n}.pdf`;
+}
+
+/* ===== Avisos e alternativas ===== */
+const inPreview = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+const PRINT_TIP = `use <button type="button" class="linklike btn-print-alt">Imprimir / Salvar como PDF</button> e escolha "Salvar como PDF" como destino.`;
+function showStatus(html, isError) {
+  document.querySelectorAll(".pdf-status").forEach(el => { el.innerHTML = html; el.classList.toggle("is-error", !!isError); el.hidden = false; });
+  document.querySelectorAll(".btn-print-alt").forEach(b => b.addEventListener("click", printReport));
+}
+function hideStatus() { document.querySelectorAll(".pdf-status").forEach(el => el.hidden = true); }
+
+function generatePDF() {
+  if (!current) { calculate(); if (!current) return; }
+  if (!window.jspdf) { showStatus(`A biblioteca de PDF não carregou (verifique a conexão com a internet). Como alternativa, ${PRINT_TIP}`, true); return; }
+  try {
+    const doc = buildPDF(), name = fileName();
+    doc.save(name);
+    showStatus(inPreview
+      ? `Esta página está aberta dentro de uma pré-visualização, que pode bloquear downloads. Se o arquivo não apareceu, abra o HTML direto no navegador ou ${PRINT_TIP}`
+      : `PDF gerado: <strong>${name}</strong>. Confira a pasta de downloads. Se não apareceu, ${PRINT_TIP}`, inPreview);
+  } catch (err) {
+    console.error(err);
+    showStatus(`Não foi possível gerar o PDF (${err.message}). Como alternativa, ${PRINT_TIP}`, true);
+  }
+}
+
+function printReport() {
+  if (!current) return;
+  const c = current, p = c.profile, rgb = `rgb(${p.rgb.join(",")})`;
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  $("print-report").innerHTML = `
+    <div class="pr-head"><strong>GN Consultoria</strong><span>Análise de Perfil do Investidor (Suitability)</span></div>
+    <h2>Identificação</h2>
+    <table class="pr-kv">
+      ${[["Nome", c.cliente.nome], ["CPF", c.cliente.cpf], ["E-mail", c.cliente.email], ["Telefone", c.cliente.telefone],
+         ["Tipo de análise", c.cliente.tipo], ["Classificação", c.cliente.classif], ["Consultor", c.cliente.consultor],
+         ["Data da análise", fmtDate(c.date)], ["Válido até", fmtDate(c.valid) + " (ou até mudança relevante)"]]
+        .map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join("")}
+    </table>
+    <h2>Resultado</h2>
+    <div class="pr-result" style="border-left-color:${rgb}">
+      <div>Perfil do investidor</div>
+      <div class="pr-profile" style="color:${rgb}">${p.name}</div>
+      <div>Equivalente ao ${p.anbima} ANBIMA. Risco máximo dos produtos: ${p.limit}. Pontuação ponderada: ${pct(c.overall)}.</div>
+    </div>
+    <p>${p.desc}</p>
+    <h3>Resultado por dimensão</h3>
+    <table class="pr-kv">${c.dims.map(d => `<tr><th>${d.sec.title} (peso ${Math.round(d.sec.weight * 100)}%)</th><td>${pct(d.norm)}: ${PROFILES[d.level - 1].name}</td></tr>`).join("")}</table>
+    <h3>Regras aplicadas</h3>${c.travas.map(t => `<p>${t}</p>`).join("")}
+    <h3>Produtos compatíveis (pontuação mínima de risco ANBIMA)</h3><ul>${p.products.map(x => `<li>${x}</li>`).join("")}</ul>
+    <h2>Questionário e respostas</h2>
+    ${c.answers.map(sec => `<h3>${sec.title}</h3><ol class="pr-qs" start="${sec.items[0].num}">${sec.items.map(it =>
+      `<li><strong>${it.q}</strong><br>${esc(it.a)} <em>(${it.pts === null ? "informativo" : it.pts + (it.pts > 1 ? " pts" : " pt")})</em></li>`).join("")}</ol>`).join("")}
+    <h2>Declaração do cliente</h2>
+    ${DECLARACAO.map(t => `<p style="font-size:9pt">${t}</p>`).join("")}
+    <div class="pr-sign">
+      <div><span></span>${esc(c.cliente.nome)}<br>Assinatura do cliente</div>
+      <div><span></span>${esc(c.cliente.consultor === "Não informado" ? "GN Consultoria" : c.cliente.consultor)}<br>Consultor responsável (GN Consultoria)</div>
+    </div>`;
+  try { window.print(); }
+  catch (e) { showStatus("A impressão foi bloqueada nesta janela. Abra o arquivo HTML direto no navegador e tente de novo.", true); }
+}
+
+$("btn-calc").addEventListener("click", calculate);
+$("btn-pdf").addEventListener("click", generatePDF);
+$("btn-pdf-2").addEventListener("click", generatePDF);
+$("btn-print").addEventListener("click", printReport);
+$("btn-reset").addEventListener("click", resetAll);
+updateProgress();
+</script>
+</body>
+</html>
